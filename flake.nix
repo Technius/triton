@@ -12,11 +12,18 @@
     devShells.x86_64-linux.default =  pkgs.python3Packages.dev-triton.overridePythonAttrs (attrs: {
       nativeBuildInputs = attrs.nativeBuildInputs ++ [
         pkgs.python3Packages.venvShellHook
-        pkgs.python3Packages.torchWithCuda
+        pkgs.dev-torch
       ];
       shellHook =  ''
         export TRITON_HOME="$PWD"/.triton
         export MAX_JOBS="$NIX_BUILD_CORES"
+        export TRITON_LIBCUDA_PATH=/run/opengl-driver/lib
+
+        # Fix the cuda include paths
+        export TRITON_CUDART_PATH="$TRITON_CUDART_PATH/include"
+
+        # Can't figure out how to set up clang stdenv
+        # export TRITON_BUILD_WITH_CLANG_LLD=TRUE
         runHook venvShellHook
         . ./.venv/bin/activate
       '';
@@ -57,6 +64,9 @@
           };
         in myPython;
       python3Packages = final.lib.attrsets.recurseIntoAttrs final.python3.pkgs;
+      dev-torch = (final.python3Packages.torch-bin.override { triton = null; }).overridePythonAttrs (attrs: {
+        dependencies = final.lib.lists.remove final.python3Packages.triton attrs.dependencies;
+      });
       dev-openai-triton-llvm = final.dev-triton-llvm;
       dev-triton-llvm = final.triton-llvm.overrideAttrs ({
         version = "llvmorg-21-init";
@@ -64,8 +74,8 @@
         src = final.fetchFromGitHub {
           owner = "llvm";
           repo = "llvm-project";
-          rev = "ffe3129e9bdc146ee4d91e849173d1c64b1ae974";
-          hash = "sha256-4hd1RKzEiG/Z7Iuy9xPTJNufzeBMDEFrxtScvTd0X08=";
+          rev = "1188b1ff7b956cb65d8ddda5f1e56c432f1a57c7";
+          hash = "sha256-iwG0bWnrVX9xbHB4eIe/JxQNFdDHb/COXo4d0joOlDE=";
         };
       });
     };
